@@ -2,11 +2,14 @@ package sk.microstep.icontrol.VisibilityHandler;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 
+import java.io.File;
 import java.io.IOException;
 import java.net.MalformedURLException;
 import java.util.LinkedList;
 import java.util.List;
 import sk.uisav.icontrol.*;
+
+import static java.lang.String.format;
 
 /**
  * A class for openwhisk action
@@ -54,7 +57,7 @@ import sk.uisav.icontrol.*;
         this.minute = min;
         this.pan = pan;
         this.azimuth = azimuth;
-        log(String.format( "VisibilityHandler::VisibilityHandler: Created visibility handler for %04d-%02d-%02d %02d:%02d/%03d/%03d",
+        log(format( "VisibilityHandler::VisibilityHandler: Created visibility handler for %04d-%02d-%02d %02d:%02d/%03d/%03d",
                 year, month, dom, hour, min, pan, azimuth));
     }
 
@@ -70,6 +73,9 @@ import sk.uisav.icontrol.*;
 
     public void run() throws Exception
     {
+        log("VisibilityHandler::run: creating working directory");
+        Boolean res = new File(workDir).mkdirs();
+        log(format("VisibilityHandler::run: working directory %s", (res ? "created" : "not created")));
         log("VisibilityHandler::run: downloading input data");
         downloadInputs();
         log("VisibilityHandler::run: starting execution");
@@ -82,7 +88,7 @@ import sk.uisav.icontrol.*;
     private WebDavClient getStorageClient(JsonObject params) throws MalformedURLException {
         String storageType = params.getAsJsonPrimitive("type").getAsString();
         if(! storageType.equalsIgnoreCase("webdav"))
-            throw new RuntimeException(String.format(
+            throw new RuntimeException(format(
                     "VisibilityHandler::getStorageClient: can work only with webdav storage, you have provided \"%s\"",
                     storageType));
         String wdUrl = params.getAsJsonPrimitive("url").getAsString();
@@ -97,7 +103,7 @@ import sk.uisav.icontrol.*;
         WebDavClient wdc = getStorageClient(this.storage);
         VisibilityHandlerClient vhc = new VisibilityHandlerClient(wdc);
         int count = vhc.putVisibilityHandlerOutput(year, month, dom, hour, minute, pan, azimuth, workDir);
-        log(String.format("VisibilityHandler::uploadOutputs: uploaded %d files", count));
+        log(format("VisibilityHandler::uploadOutputs: uploaded %d files", count));
     }
 
     private void execute()
@@ -109,7 +115,7 @@ import sk.uisav.icontrol.*;
         WebDavClient wdc = getStorageClient(this.storage);
         VisibilityHandlerClient vhc = new VisibilityHandlerClient(wdc);
         long dlinfo = vhc.getVisibilityHandlerInput(year, month, dom, hour, minute, pan, azimuth, workDir);
-        log(String.format("VisibilityHandler::downloadInputs: downloaded %d bytes", dlinfo));
+        log(format("VisibilityHandler::downloadInputs: downloaded %d bytes", dlinfo));
     }
 
     public JsonObject getResult() throws Exception

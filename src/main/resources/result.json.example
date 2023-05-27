@@ -22,6 +22,8 @@
   },
   "log": [
     "VisibilityHandler::VisibilityHandler: Created visibility handler for 2021-11-30 18:00/090/225",
+    "VisibilityHandler::run: creating working directory",
+    "VisibilityHandler::run: working directory created",
     "VisibilityHandler::run: downloading input data",
     "VisibilityHandler::downloadInputs: downloaded 436213 bytes",
     "VisibilityHandler::run: starting execution",
