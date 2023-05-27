@@ -32,7 +32,7 @@
         <dependency>
             <groupId>sk.uisav.icontrol</groupId>
             <artifactId>webdav</artifactId>
-            <version>0.1</version>
+            <version>0.3</version>
             <!-- if you don't have webdav in your local .m2 repo:
             <scope>system</scope>
             <systemPath>${project.basedir}/src/main/resources/webdav.jar</systemPath>

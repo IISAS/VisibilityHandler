@@ -1,0 +1,19 @@
+{
+    "storage":
+    {
+        "type": "webdav",
+        "url": "https://mesos.ui.sav.sk:444/remote.php/webdav/",
+        "login": "janko.hrasko",
+        "password": "nbusr123"
+    },
+    "datetime":
+    {
+        "year": "2021",
+        "month": "11",
+        "dom": "30",
+        "hour": "18",
+        "minute": "0",
+        "pan": "90",
+        "azimuth": "225"
+    }
+}

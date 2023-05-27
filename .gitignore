@@ -1,0 +1,6 @@
+/data/
+
+.idea/
+target/
+/src/main/resources/in.json
+/src/main/resources/result.json

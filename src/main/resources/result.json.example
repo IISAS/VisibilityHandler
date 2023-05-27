@@ -1,0 +1,33 @@
+{
+  "request": {
+    "storage": {
+      "type": "webdav",
+      "url": "https://mesos.ui.sav.sk:444/remote.php/webdav/",
+      "login": "janko.hrasko",
+      "password": "nbusr123"
+    },
+    "datetime": {
+      "year": "2021",
+      "month": "11",
+      "dom": "30",
+      "hour": "18",
+      "minute": "0",
+      "pan": "90",
+      "azimuth": "225"
+    }
+  },
+  "result": "value",
+  "value": {
+    "result": "OK"
+  },
+  "log": [
+    "VisibilityHandler::VisibilityHandler: Created visibility handler for 2021-11-30 18:00/090/225",
+    "VisibilityHandler::run: downloading input data",
+    "VisibilityHandler::downloadInputs: downloaded 436213 bytes",
+    "VisibilityHandler::run: starting execution",
+    "VisibilityHandler::execute: executing nothing...",
+    "VisibilityHandler::run: uploading output data",
+    "VisibilityHandler::uploadOutputs: uploaded 1 files",
+    "VisibilityHandler::run: finished OK"
+  ]
+}

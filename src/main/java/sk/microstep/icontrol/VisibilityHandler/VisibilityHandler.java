@@ -32,16 +32,18 @@ import sk.uisav.icontrol.*;
  * 3. wsk -i action invoke visibilityHandler -b -r -P in.json
  * 4. wsk -i action delete visibilityHandler
  */public class VisibilityHandler {
-    private List<String> mylog;
-    private JsonObject storage;
-    private final static String workDir = "/tmp";
-    private int year;
-    private int month;
-    private int dom;
-    private int hour;
-    private int minute;
+    private final List<String> mylog;
+    private final JsonObject storage;
+    private final static String workDir = "/tmp/visibilityHandler";
+    private final int year;
+    private final int month;
+    private final int dom;
+    private final int hour;
+    private final int minute;
+    private final int pan;
+    private final int azimuth;
 
-    public VisibilityHandler(int year, int month, int dom, int hour, int min, JsonObject storage) throws Exception
+    public VisibilityHandler(int year, int month, int dom, int hour, int min, int pan, int azimuth, JsonObject storage) throws Exception
     {
         this.mylog = new LinkedList<String>();
         this.storage = storage;
@@ -50,8 +52,10 @@ import sk.uisav.icontrol.*;
         this.dom = dom;
         this.hour = hour;
         this.minute = min;
-        log(String.format( "VisibilityHandler::VisibilityHandler: Created visibility handler for %04d-%02d-%02d %02d:%02d",
-                year, month, dom, hour, min));
+        this.pan = pan;
+        this.azimuth = azimuth;
+        log(String.format( "VisibilityHandler::VisibilityHandler: Created visibility handler for %04d-%02d-%02d %02d:%02d/%03d/%03d",
+                year, month, dom, hour, min, pan, azimuth));
     }
 
     private void log(String msg)
@@ -91,8 +95,8 @@ import sk.uisav.icontrol.*;
     private void uploadOutputs() throws IOException
     {
         WebDavClient wdc = getStorageClient(this.storage);
-        VisibilityHandlerClient vhc = new VisibilityHandlerClient(wdc, null);
-        int count = vhc.putVisibilityHandlerOutputs(year, month, dom, hour, minute, workDir);
+        VisibilityHandlerClient vhc = new VisibilityHandlerClient(wdc);
+        int count = vhc.putVisibilityHandlerOutput(year, month, dom, hour, minute, pan, azimuth, workDir);
         log(String.format("VisibilityHandler::uploadOutputs: uploaded %d files", count));
     }
 
@@ -103,9 +107,9 @@ import sk.uisav.icontrol.*;
 
     private void downloadInputs() throws IOException {
         WebDavClient wdc = getStorageClient(this.storage);
-        VisibilityHandlerClient vhc = new VisibilityHandlerClient(wdc, null);
-        int[] dlinfo = vhc.getVisibilityHandlerInputs(year, month, dom, hour, minute, workDir);
-        log(String.format("VisibilityHandler::downloadInputs: downloaded %d bytes in %d files", dlinfo[1], dlinfo[0]));
+        VisibilityHandlerClient vhc = new VisibilityHandlerClient(wdc);
+        long dlinfo = vhc.getVisibilityHandlerInput(year, month, dom, hour, minute, pan, azimuth, workDir);
+        log(String.format("VisibilityHandler::downloadInputs: downloaded %d bytes", dlinfo));
     }
 
     public JsonObject getResult() throws Exception
@@ -123,12 +127,14 @@ import sk.uisav.icontrol.*;
         int dom = date.getAsJsonPrimitive("dom").getAsInt();
         int hour = date.getAsJsonPrimitive("hour").getAsInt();
         int minute = date.getAsJsonPrimitive("minute").getAsInt();
+        int pan = date.getAsJsonPrimitive("pan").getAsInt();
+        int azimuth = date.getAsJsonPrimitive("azimuth").getAsInt();
         JsonObject storage = args.getAsJsonObject("storage");
         JsonObject response = new JsonObject();
         response.add("request", args);
         try
         {
-            VisibilityHandler vh = new VisibilityHandler(year, month, dom, hour, minute, storage);
+            VisibilityHandler vh = new VisibilityHandler(year, month, dom, hour, minute, pan, azimuth, storage);
             vh.run();
             JsonObject result = vh.getResult();
             response.addProperty("result", "value");
