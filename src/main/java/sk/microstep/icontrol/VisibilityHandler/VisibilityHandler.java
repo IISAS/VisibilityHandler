@@ -2,8 +2,8 @@ package sk.microstep.icontrol.VisibilityHandler;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 
-import java.io.File;
-import java.io.IOException;
+import java.io.*;
+import java.lang.ProcessBuilder.Redirect;
 import java.net.MalformedURLException;
 import java.util.LinkedList;
 import java.util.List;
@@ -106,9 +106,76 @@ import static java.lang.String.format;
         log(format("VisibilityHandler::uploadOutputs: uploaded %d files", count));
     }
 
+    private String fileToString(String fileName) throws IOException {
+        BufferedReader reader = new BufferedReader(new FileReader(fileName));
+        StringBuilder stringBuilder = new StringBuilder();
+        String line = null;
+        String ls = System.getProperty("line.separator");
+        boolean doDeleteLastLs = false;
+        while ((line = reader.readLine()) != null) {
+            stringBuilder.append(line);
+            stringBuilder.append(ls);
+            doDeleteLastLs = true;
+        }
+// delete the last new line separator
+        if(doDeleteLastLs)
+            stringBuilder.deleteCharAt(stringBuilder.length() - 1);
+        reader.close();
+
+        String content = stringBuilder.toString();
+        return content;
+    }
+
     private void execute()
     {
-        log("VisibilityHandler::execute: executing nothing...");
+        String inputImg = workDir + "/panasonic_fullhd_01-" + this.pan + "-" + this.azimuth + "-" + this.year + this.month + this.dom + this.hour + this.minute + ".jpg";
+        String resultPath = workDir;
+        String resultName = "ImageVisibilityHandler-test_result";
+        String panAzimuth = this.pan + "-" + this.azimuth;
+        String generateImg = "1"; // (1-yes/0-no)
+        String cfgAutomated = "/cfgs/automated";
+        String cfgPrevailingVis = "/cfgs/ImagePrevailingVisibilityCfg.xml";
+
+        ProcessBuilder pb = new ProcessBuilder("java", "-jar", "/javaAction/libs/ImageVisibilityHandler-jar-with-dependencies.jar",
+                inputImg,
+                resultPath,
+                resultName,
+                panAzimuth,
+                generateImg,
+                cfgAutomated,
+                cfgPrevailingVis);
+
+        String rErrName = "/tmp/pberr.txt";
+        String rOutName = "/tmp/pbout.txt";
+
+        Redirect rErr = ProcessBuilder.Redirect.to(new File(rErrName));
+        Redirect rOut = ProcessBuilder.Redirect.to(new File(rOutName));
+
+        pb.redirectError(rErr);
+        pb.redirectOutput(rOut);
+
+        log("VisibilityHandler::execute: Run ImageVisibilityHandler-jar-with-dependencies.jar with parameters: \n"
+                + "INPUT IMG: " + inputImg + "\n"
+                + "RESULT PATH: " + resultPath + "\n"
+                + "RESULT NAME: " + resultName + "\n"
+                + "PAN and AZIMUTH: " + this.pan + "-" + this.azimuth + "\n"
+                + "GENERATE IMAGE (1-yes/0-no): " + generateImg + "\n"
+                + "CFG_AUTOMATED FOLDER: " + cfgAutomated + "\n"
+                + "CFG_PREVAILING_VIS: " + cfgPrevailingVis);
+
+        pb.directory(new File("/tmp/visibilityHandler/"));
+        log("VisibilityHandler::execute: executing...");
+        try {
+            pb.start();
+            String errOut = fileToString(rErrName);
+            log("VisibilityHandler::execute: stderr: " + errOut);
+            String stdOut = fileToString(rOutName);
+            log("VisibilityHandler::execute: stdout: " + stdOut);
+        } catch (IOException e) {
+            log("VisibilityHandler::execute: Process failed: \n" + e.toString());
+        }
+
+        log("VisibilityHandler::execute: DONE");
     }
 
     private void downloadInputs() throws IOException {
@@ -138,22 +205,33 @@ import static java.lang.String.format;
         JsonObject storage = args.getAsJsonObject("storage");
         JsonObject response = new JsonObject();
         response.add("request", args);
+        VisibilityHandler vh = null;
         try
         {
-            VisibilityHandler vh = new VisibilityHandler(year, month, dom, hour, minute, pan, azimuth, storage);
+            vh = new VisibilityHandler(year, month, dom, hour, minute, pan, azimuth, storage);
+        }
+        catch (Exception e)
+        {
+            response.addProperty("result", "exception");
+            response.addProperty("exception", e.toString());
+        }
+        try
+        {
             vh.run();
             JsonObject result = vh.getResult();
             response.addProperty("result", "value");
             response.add("value", result);
+        } catch (Exception e)
+        {
+            response.addProperty("result", "exception");
+            response.addProperty("exception", e.toString());
+        }
+        finally {
             List<String> log = vh.getLog();
             JsonArray logJson = new JsonArray();
             for(String line: log)
                 logJson.add(line);
             response.add("log", logJson);
-        } catch (Exception e)
-        {
-            response.addProperty("result", "exception");
-            response.addProperty("exception", e.toString());
         }
         return response;
     }
