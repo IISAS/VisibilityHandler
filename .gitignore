@@ -4,3 +4,5 @@
 target/
 /src/main/resources/in.json
 /src/main/resources/result.json
+
+src/main/resources/webdav.jar
