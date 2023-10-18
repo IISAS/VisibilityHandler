@@ -5,8 +5,15 @@ import com.google.gson.JsonObject;
 import java.io.*;
 import java.lang.ProcessBuilder.Redirect;
 import java.net.MalformedURLException;
-import java.util.LinkedList;
-import java.util.List;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
+import java.util.*;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+
 import sk.uisav.icontrol.*;
 
 import static java.lang.String.format;
@@ -63,7 +70,7 @@ import static java.lang.String.format;
 
     private void log(String msg)
     {
-        this.mylog.add(msg);
+        this.mylog.add(getDateTime() + " " + msg);
     }
 
     private List<String> getLog()
@@ -126,8 +133,25 @@ import static java.lang.String.format;
         return content;
     }
 
+    public Set<String> listDirectory(String dir) throws IOException {
+        try (Stream<Path> stream = Files.list(Paths.get(dir))) {
+            return stream
+                    .filter(file -> !Files.isDirectory(file))
+                    .map(Path::getFileName)
+                    .map(Path::toString)
+                    .collect(Collectors.toSet());
+        }
+    }
+
+    public String getDateTime() {
+        Date date = Calendar.getInstance().getTime();
+        DateFormat dateFormat = new SimpleDateFormat("yyyy-mm-dd hh:mm:ss.SSS");
+        return dateFormat.format(date);
+    }
+
     private void execute()
     {
+        log("VisibilityHandler::execute: cp is " + System.getProperty("java.class.path"));
         String inputImg = workDir + "/panasonic_fullhd_01-" + this.pan + "-" + this.azimuth + "-" + this.year + this.month + this.dom + this.hour + this.minute + ".jpg";
         String resultPath = workDir;
         String resultName = "ImageVisibilityHandler-test_result";
@@ -136,7 +160,8 @@ import static java.lang.String.format;
         String cfgAutomated = "/cfgs/automated";
         String cfgPrevailingVis = "/cfgs/ImagePrevailingVisibilityCfg.xml";
 
-        ProcessBuilder pb = new ProcessBuilder("java", "-jar", "/javaAction/libs/ImageVisibilityHandler-jar-with-dependencies.jar",
+        ProcessBuilder pb = new ProcessBuilder(
+                "java", "-cp", "/javaAction/libs/ImageVisibilityHandler-jar-with-dependencies.jar:/javaAction/libs/opencv-4.4.0-natives-linux-amd64.jar", "com.microstepmis.remoteObserver.visibility.automated.ImageVisibilityHandler",
                 inputImg,
                 resultPath,
                 resultName,
@@ -163,16 +188,27 @@ import static java.lang.String.format;
                 + "CFG_AUTOMATED FOLDER: " + cfgAutomated + "\n"
                 + "CFG_PREVAILING_VIS: " + cfgPrevailingVis);
 
-        pb.directory(new File("/tmp/visibilityHandler/"));
+        pb.directory(new File(workDir));
         log("VisibilityHandler::execute: executing...");
         try {
-            pb.start();
+            Set<String> filesInDir = listDirectory(workDir);
+            for(String filename: filesInDir)
+                log("VisibilityHandler::execute: before file \"" + filename + "\"");
+            Process proc = pb.start();
+            log("VisibilityHandler::execute: before WaitFor()");
+            proc.waitFor();
+            log("VisibilityHandler::execute: after WaitFor()");
+            filesInDir = listDirectory(workDir);
+            for(String filename: filesInDir)
+                log("VisibilityHandler::execute: after file \"" + filename + "\"");
             String errOut = fileToString(rErrName);
             log("VisibilityHandler::execute: stderr: " + errOut);
             String stdOut = fileToString(rOutName);
             log("VisibilityHandler::execute: stdout: " + stdOut);
         } catch (IOException e) {
             log("VisibilityHandler::execute: Process failed: \n" + e.toString());
+        } catch (InterruptedException e) {
+            log("VisibilityHandler::execute: Process interrupted: \n" + e.toString());
         }
 
         log("VisibilityHandler::execute: DONE");
